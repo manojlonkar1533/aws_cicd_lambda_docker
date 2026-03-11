@@ -10,7 +10,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+    env:
+      FUNCTION_NAME: my-lambda-function
+      HANDLER: handler.lambda_handler          # e.g. file.function_name
+      RUNTIME: python3.11
+      ROLE_ARN: ${{ secrets.AWS_LAMBDA_ROLE_ARN }}  # must exist and be able to run Lambdas
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -37,9 +42,31 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      
-      - name: Deploy to Lambda
+
+      - name: Create function if missing
+        run: |
+          set -euo pipefail
+          # ensure zip exists
+          if [ ! -f lambda/lambda-deployment.zip ]; then
+            echo "Deployment zip not found!" >&2
+            exit 1
+          fi
+
+          if aws lambda get-function --function-name "${FUNCTION_NAME}" >/dev/null 2>&1; then
+            echo "Lambda ${FUNCTION_NAME} already exists."
+          else
+            echo "Lambda ${FUNCTION_NAME} not found — creating..."
+            aws lambda create-function \
+              --function-name "${FUNCTION_NAME}" \
+              --runtime "${RUNTIME}" \
+              --role "${ROLE_ARN}" \
+              --handler "${HANDLER}" \
+              --zip-file fileb://lambda/lambda-deployment.zip \
+              --timeout 15 \
+              --memory-size 128
+          fi
+      - name: Deploy to Lambda (update code)
         run: |
           aws lambda update-function-code \
-            --function-name my-lambda-function \
+            --function-name "${FUNCTION_NAME}" \
             --zip-file fileb://lambda/lambda-deployment.zip
