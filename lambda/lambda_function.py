@@ -17,6 +17,3 @@ def lambda_handler(event, context):
 
 **requirements.txt:** (if you have dependencies)
 '''
-# Add your Python dependencies here
-# Example:
-# requests==2.31.0
