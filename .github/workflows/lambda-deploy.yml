@@ -11,7 +11,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      FUNCTION_NAME: my-lambda-function
+      FUNCTION_NAME: lambda-test-function
       HANDLER: handler.lambda_handler          # e.g. file.function_name
       RUNTIME: python3.11
       ROLE_ARN: ${{ secrets.AWS_LAMBDA_ROLE_ARN }}  # must exist and be able to run Lambdas
