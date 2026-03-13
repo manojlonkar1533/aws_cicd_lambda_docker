@@ -9,10 +9,6 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: docker/lambda        # exact name you created in ECR
 
-permissions:
-  id-token: write               # needed for OIDC
-  contents: read
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
