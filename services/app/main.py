@@ -14,6 +14,5 @@ def lambda_handler(event, context):
         })
     }
 '''
-
 ** requirements.txt:** (if you have dependencies)
 '''
