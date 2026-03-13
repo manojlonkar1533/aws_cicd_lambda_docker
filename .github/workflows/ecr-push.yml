@@ -9,6 +9,10 @@ env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: docker/lambda        # exact name you created in ECR
 
+permissions:
+  id-token: write               # needed for OIDC
+  contents: read
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -22,6 +26,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          role-to-assume: arn:aws:iam::416418941336:role/GitHubActionsECRPush
           aws-region: ${{ env.AWS_REGION }}
 
       # 3. Login to ECR (gets a temporary Docker login)
