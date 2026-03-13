@@ -1,8 +1,14 @@
-FROM python:3.12-slim
+# Dockerfile.lambda — AWS Lambda container image
+FROM public.ecr.aws/lambda/python:3.12
 
-WORKDIR /app
-COPY . /app
+WORKDIR /var/task
 
+# Copy and install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "main.py"]
+# Copy your Lambda handler
+COPY lambda_handler.py .
+
+# Lambda runtime interface (must use CMD)
+CMD ["lambda_handler.lambda_handler"]
