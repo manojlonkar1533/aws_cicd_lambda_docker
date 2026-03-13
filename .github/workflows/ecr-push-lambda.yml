@@ -7,7 +7,7 @@ on:
       - 'services/**'
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: docker/layer        # exact name you created in ECR
+  ECR_REPOSITORY: lambda/layer        # exact name you created in ECR
 
 permissions:
   id-token: write               # needed for OIDC
