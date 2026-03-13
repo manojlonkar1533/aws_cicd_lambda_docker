@@ -40,18 +40,14 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}   # immutable tag based on commit
         run: |
-          # Build image with SHA tag
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-
-          # Push SHA-tagged image
+          docker build \
+            --file services/Dockerfile \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            services/
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-          # Also push a 'latest' tag for convenience
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-                     $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-          echo "Pushed image:"
-          echo " - $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          echo " - $ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "✅ Pushed:"
+          echo "  $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          echo "  $ECR_REGISTRY/$ECR_REPOSITORY:latest"
