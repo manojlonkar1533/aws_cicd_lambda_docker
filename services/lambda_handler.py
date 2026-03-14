@@ -7,3 +7,7 @@ def lambda_handler(event, context):
             'commit': 'IMAGE_TAG_PLACEHOLDER'
         })
     }
+
+if __name__ == "__main__":
+    result = lambda_handler({}, None)
+    print(result)
