@@ -1,0 +1,18 @@
+{
+  "family": "aws-lambda-demo",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [{
+    "name": "app",
+    "image": "416418941336.dkr.ecr.us-east-1.amazonaws.com/lambda/layer@sha256:3b24bf340b3d639520ea01c7756e2e1ad16108ff70d9a2e690612fb01379740a",
+    "portMappings": [                {
+                    "name": "docker-port",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }]
+  }]
+}

@@ -26,7 +26,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::416418941336:role/GitHubActionsECRPush
+          role-to-assume: arn:aws:iam::xxx:role/GitHubActionsECRPush
           aws-region: ${{ env.AWS_REGION }}
 
       # 3. Login to ECR (gets a temporary Docker login)
