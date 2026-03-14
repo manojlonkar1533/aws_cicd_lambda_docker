@@ -54,6 +54,6 @@ jobs:
       - name: Update ECS service
         run: |
           aws ecs update-service \
-            --cluster aws-lambda \
+            --cluster ecr-ecs-demo \
             --service aws-lambda-service \
             --force-new-deployment
