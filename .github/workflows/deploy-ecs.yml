@@ -1,5 +1,5 @@
 deploy-ecs:
-  needs: ecr-push-lambda  # after image push
+  needs: ecr-push-lambda  #after image push
   runs-on: ubuntu-latest
   steps:
     - name: Deploy to ECS
