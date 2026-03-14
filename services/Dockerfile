@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY lambda_handler.py .
 
 # Lambda runtime interface (must use CMD)
-CMD ["lambda_handler.lambda_handler"]
+CMD ["python", "lambda_handler.lambda_handler"]
