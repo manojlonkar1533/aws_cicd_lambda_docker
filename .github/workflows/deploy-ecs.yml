@@ -5,7 +5,7 @@ deploy-ecs:
     - name: Deploy to ECS
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
-        task-definition: services/task-definition.json  # create this file
+        task-definition: services/task-definition.json
         service: ecr-ecs-demo-service
         cluster: ecr-ecs-demo
         wait-for-service-stability: true
