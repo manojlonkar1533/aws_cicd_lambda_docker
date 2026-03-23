@@ -9,11 +9,11 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: price-prediction
+  ECR_REPOSITORY: fastapi-app
   ECS_CLUSTER: price-prediction-cluster         # ← CHANGE THIS
   ECS_SERVICE: price-prediction-service         # ← CHANGE THIS
   CONTAINER_NAME: price-prediction1      # ← must match Task Definition container name
-  TASK_DEFINITION: aws-lambda            # ← your Task Definition family name
+  TASK_DEFINITION: fastapi-app-def         # ← your Task Definition family name
 
 jobs:
   # -------------------------------------------------------
