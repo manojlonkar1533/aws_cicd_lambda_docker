@@ -129,15 +129,13 @@ jobs:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true   # waits until deployment is healthy
-
       # --------------------------------------------------
       # Step 7: Verify ALB target health after deploy
       # --------------------------------------------------
       - name: Verify target group health
         run: |
           TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
-            --names docker \
+            --names fastapi-alb \
             --query "TargetGroups[0].TargetGroupArn" \
             --output text)
 
