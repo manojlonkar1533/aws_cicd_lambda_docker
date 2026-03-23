@@ -102,7 +102,13 @@ jobs:
             --task-definition ${{ env.TASK_DEFINITION }} \
             --query taskDefinition \
             > task-definition.json
-
+# --------------------------------------------------
+      # Step 4.5: Clean the task definition metadata
+      # --------------------------------------------------
+      - name: Clean task definition
+        run: |
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' task-definition.json > cleaned-task.json
+          mv cleaned-task.json task-definition.json
       # --------------------------------------------------
       # Step 5: Update Task Definition with new image
       # --------------------------------------------------
@@ -118,7 +124,7 @@ jobs:
       # Step 6: Deploy to ECS (rolls out new task)
       # --------------------------------------------------
       - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
