@@ -3,8 +3,6 @@ name: Deploy to ECS
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'services/**'
  # pull_request:
  #   branches:
  #     - main

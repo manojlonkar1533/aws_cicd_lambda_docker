@@ -1,0 +1,18 @@
+{
+  "family": "aws-lambda-demo",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [{
+    "name": "app",
+    "image": "416418941336.dkr.ecr.us-east-1.amazonaws.com/fastapi-app:latest",
+    "portMappings": [                {
+                    "name": "docker-port",
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }]
+  }]
+}
