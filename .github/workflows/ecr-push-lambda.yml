@@ -10,10 +10,10 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: fastapi-app
-  ECS_CLUSTER: price-prediction-cluster         # ← CHANGE THIS
-  ECS_SERVICE: price-prediction-service         # ← CHANGE THIS
-  CONTAINER_NAME: lambda-call      # ← must match Task Definition container name
-  TASK_DEFINITION: aws-lambda         # ← your Task Definition family name
+  ECS_CLUSTER: demo-ecs-cluster        # ← CHANGE THIS
+  ECS_SERVICE: demo-task-service         # ← CHANGE THIS
+  CONTAINER_NAME: demo-container      # ← must match Task Definition container name
+  TASK_DEFINITION: demo-task         # ← your Task Definition family name
 
 jobs:
   # -------------------------------------------------------
