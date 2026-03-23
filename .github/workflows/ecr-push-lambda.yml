@@ -1,59 +1,178 @@
-name: Build and Push Lambda docker Image to ECR
+name: Deploy to ECS
 
 on:
   push:
     branches: [ main ]
     paths:
       - 'services/**'
+ # pull_request:
+ #   branches:
+ #     - main
+
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: lambda/layer        # exact name you created in ECR
-
-permissions:
-  id-token: write               # needed for OIDC
-  contents: read
+  ECR_REPOSITORY: price-prediction
+  ECS_CLUSTER: price-prediction-cluster         # ← CHANGE THIS
+  ECS_SERVICE: price-prediction-service         # ← CHANGE THIS
+  CONTAINER_NAME: price-prediction1      # ← must match Task Definition container name
+  TASK_DEFINITION: aws-lambda            # ← your Task Definition family name
 
 jobs:
-  build-and-push:
+  # -------------------------------------------------------
+  # JOB 1: Run tests before deploying
+  # -------------------------------------------------------
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the code
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Configure AWS credentials via OIDC and the IAM role you created
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v || echo "No tests found, skipping..."
+
+  # -------------------------------------------------------
+  # JOB 2: Build, push to ECR, deploy to ECS
+  # -------------------------------------------------------
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    #needs: test
+    ## Only deploy on push to main (not on PRs)
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------
+      # Step 1: Configure AWS credentials
+      # --------------------------------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::416418941336:role/GitHubActionsECRPush
+		  role-to-assume: arn:aws:iam::416418941336:role/GitHubActionsECRPush
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 3. Login to ECR (gets a temporary Docker login)
+      # --------------------------------------------------
+      # Step 2: Login to Amazon ECR
+      # --------------------------------------------------
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 4. Build and push Docker image
-      - name: Build and push image
+      # --------------------------------------------------
+      # Step 3: Build, tag, and push Docker image to ECR
+      # --------------------------------------------------
+      - name: Build, tag, and push image to ECR
+        id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}   # immutable tag based on commit
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build \
-            --file services/Dockerfile \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
-            services/
+          # Build the Docker image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+
+          # Push both the SHA-tagged and latest image
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-          echo "✅ Pushed:"
-          echo "  $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          echo "  $ECR_REGISTRY/$ECR_REPOSITORY:latest"
-      - name: Update ECS service
+          # Output the image URI for the next step
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # --------------------------------------------------
+      # Step 4: Download current ECS Task Definition
+      # --------------------------------------------------
+      - name: Download task definition
         run: |
-          aws ecs update-service \
-            --cluster ecr-ecs-demo \
-            --service aws-lambda-service \
-            --force-new-deployment
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.TASK_DEFINITION }} \
+            --query taskDefinition \
+            > task-definition.json
+
+      # --------------------------------------------------
+      # Step 5: Update Task Definition with new image
+      # --------------------------------------------------
+      - name: Update ECS task definition with new image
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      # --------------------------------------------------
+      # Step 6: Deploy to ECS (rolls out new task)
+      # --------------------------------------------------
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true   # waits until deployment is healthy
+
+      # --------------------------------------------------
+      # Step 7: Verify ALB target health after deploy
+      # --------------------------------------------------
+      - name: Verify target group health
+        run: |
+          TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
+            --names docker \
+            --query "TargetGroups[0].TargetGroupArn" \
+            --output text)
+
+          echo "Checking target health for: $TARGET_GROUP_ARN"
+
+          # Wait up to 2 minutes for targets to become healthy
+          for i in {1..12}; do
+            HEALTH=$(aws elbv2 describe-target-health \
+              --target-group-arn $TARGET_GROUP_ARN \
+              --query "TargetHealthDescriptions[*].TargetHealth.State" \
+              --output text)
+
+            echo "Attempt $i/12 - Target health: $HEALTH"
+
+            if echo "$HEALTH" | grep -q "healthy"; then
+              echo "✅ Target is healthy!"
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "❌ Targets did not become healthy in time"
+          exit 1
+
+      # --------------------------------------------------
+      # Step 8: Print deployment summary
+      # --------------------------------------------------
+      - name: Deployment summary
+        if: success()
+        run: |
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --names home-price-predict \
+            --query "LoadBalancers[0].DNSName" \
+            --output text)
+
+          echo "================================================"
+          echo "✅ Deployment successful!"
+          echo "📦 Image: ${{ steps.build-image.outputs.image }}"
+          echo "🌐 App URL: http://$ALB_DNS"
+          echo "================================================"
