@@ -13,7 +13,7 @@ env:
   ECS_CLUSTER: price-prediction-cluster         # ← CHANGE THIS
   ECS_SERVICE: price-prediction-service         # ← CHANGE THIS
   CONTAINER_NAME: price-prediction1      # ← must match Task Definition container name
-  TASK_DEFINITION: fastapi-app-def         # ← your Task Definition family name
+  TASK_DEFINITION: task-definition         # ← your Task Definition family name
 
 jobs:
   # -------------------------------------------------------
