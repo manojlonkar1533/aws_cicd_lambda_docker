@@ -134,33 +134,32 @@ jobs:
       # --------------------------------------------------
       - name: Verify target group health
         run: |
-  run: |
-        ALB_ARN=$(aws elbv2 describe-load-balancers \
-          --names fastapi-alb \
-          --query "LoadBalancers[0].LoadBalancerArn" \
-          --output text)
-
-        TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
-          --load-balancer-arn $ALB_ARN \
-          --query "TargetGroups[0].TargetGroupArn" \
-          --output text)
-
-        echo "Checking target health for: $TARGET_GROUP_ARN"
-
-        for i in {1..12}; do
-          HEALTH=$(aws elbv2 describe-target-health \
-            --target-group-arn $TARGET_GROUP_ARN \
-            --query "TargetHealthDescriptions[*].TargetHealth.State" \
+          ALB_ARN=$(aws elbv2 describe-load-balancers \
+            --names fastapi-alb \
+            --query "LoadBalancers[0].LoadBalancerArn" \
             --output text)
 
-          echo "Attempt $i/12 - Target health: $HEALTH"
+          TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
+            --load-balancer-arn $ALB_ARN \
+            --query "TargetGroups[0].TargetGroupArn" \
+            --output text)
 
-          if echo "$HEALTH" | grep -q "healthy"; then
-            echo "✅ Target is healthy!"
-            exit 0
-          fi
-          sleep 10
-        done
+          echo "Checking target health for: $TARGET_GROUP_ARN"
+
+          for i in {1..12}; do
+            HEALTH=$(aws elbv2 describe-target-health \
+              --target-group-arn $TARGET_GROUP_ARN \
+              --query "TargetHealthDescriptions[*].TargetHealth.State" \
+              --output text)
+
+            echo "Attempt $i/12 - Target health: $HEALTH"
+
+            if echo "$HEALTH" | grep -q "healthy"; then
+              echo "✅ Target is healthy!"
+              exit 0
+            fi
+            sleep 10
+          done
 
           echo "❌ Targets did not become healthy in time"
           exit 1
