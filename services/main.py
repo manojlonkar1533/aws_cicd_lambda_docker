@@ -20,7 +20,7 @@ def predict_price(area, bedrooms, bathrooms, location_score):
     )
     return round(price, 2)
 
-@app.get("/", response_class=HTMLResponse)  # ← change this
+@app.get("/", response_class=HTMLResponse) 
 def home():
     with open("index.html") as f:           # ← serve HTML file
         return f.read()
